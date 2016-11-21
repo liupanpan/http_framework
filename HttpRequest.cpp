@@ -15,6 +15,17 @@ HttpRequest::~HttpRequest()
 {
 }
 
+void HttpRequest::setLinkError ( const REQ_Status req_status )
+{
+   status = req_status;
+}
+
+void HttpRequest::setHttpError ( int http_code )
+{
+   status            = REQ_HTTP_ERR;
+   http_status_code  = http_code;
+}
+
 unsigned int HttpRequest::onReceiveHeader(void *pData, unsigned int size, unsigned int nmemb)
 {
    return size*nmemb;
@@ -46,4 +57,10 @@ unsigned int HttpRequest::onReceiveData(void *pData, unsigned int size, unsigned
    rxBuffer.insert(rxBuffer.end(), (unsigned char*)(pData), (unsigned char*)(pData) + size*nmemb);
 
    return size*nmemb;
+}
+
+void HttpRequest::setRequestInfo(const SynchronousRequest &synchronousRequest)
+{
+	this->headers[CONTENT_TYPE] = "Content-Type: " + synchronousRequest.HTTPContentType;
+	this->headers[CHARSET] = "charset: utf-8";
 }

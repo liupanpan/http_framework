@@ -6,18 +6,18 @@
 
 enum REQ_Status
 {
-   REQ_OK         = 0,        ///< Everything is OK.
-   REQ_LE_REJECTED,           ///< Conection was rejected by the server.
-   REQ_LE_CLOSED,             ///< Server closed the connection.
-   REQ_LE_NO_HOST,            ///< The host address could not be resolved.
-   REQ_LE_TIMEOUT,            ///< Client side timeout.
-   REQ_LE_SSL_CONNECTION,     ///< There was a problem with the secure connection.
-   REQ_LE_UNKNOWN,            ///< All other errors that might ocurrr
-   REQ_HTTP_ERR,              ///< We got a http response code not equal to 200 (status ok).
-   REQ_CONTROLLED_DISABLE,    ///< Set when the connection was disconnected client side.
-   REQ_LE_OLS_CERT_ERR,       ///< There was a problem with the client certificate
-   REQ_LE_BACKEND_CERT_ERR,   ///< Peer could not be verified or a problem with the CA certificate.
-   REQ_LE_WRITE_ERROR         ///< Could not store the received data.
+   REQ_OK         = 0,        //Everything is OK.
+   REQ_LE_REJECTED,           //Conection was rejected by the server.
+   REQ_LE_CLOSED,             //Server closed the connection.
+   REQ_LE_NO_HOST,            //The host address could not be resolved.
+   REQ_LE_TIMEOUT,            //Client side timeout.
+   REQ_LE_SSL_CONNECTION,     //There was a problem with the secure connection.
+   REQ_LE_UNKNOWN,            //All other errors that might ocurrr
+   REQ_HTTP_ERR,              //We got a http response code not equal to 200 (status ok).
+   REQ_CONTROLLED_DISABLE,    //Set when the connection was disconnected client side.
+   REQ_LE_OLS_CERT_ERR,       //There was a problem with the client certificate
+   REQ_LE_BACKEND_CERT_ERR,   //Peer could not be verified or a problem with the CA certificate.
+   REQ_LE_WRITE_ERROR         //Could not store the received data.
 };
 
 enum FAIL_REASON
@@ -88,20 +88,20 @@ class HttpRequest
 
         virtual unsigned int onTransmitData(void *pData, unsigned int size, unsigned int nmemb);
         
-	//Buffers
-	unsigned int txDataTransmitted;//How many bytes has currently been sent.
-	std::vector<unsigned char> txBuffer; //Buffer containing send data. Typically xml data serialized from internal structures.
-	std::vector<unsigned char> rxBuffer;//Buffer in which to receive uncompleted data
-		
-	// Connection config
-	std::string urlStr;
+		//Buffers
+		unsigned int txDataTransmitted;//How many bytes has currently been sent.
+		std::vector<unsigned char> txBuffer; //Buffer containing send data. Typically xml data serialized from internal structures.
+		std::vector<unsigned char> rxBuffer;//Buffer in which to receive uncompleted data
+			
+		// Connection config
+		std::string urlStr;
 
-	typedef std::map<HeaderType, std::string> HeaderMap;
-	HeaderMap headers;            //Request headers that will be added to the default set of headers.
+		typedef std::map<HeaderType, std::string> HeaderMap;
+		HeaderMap headers;            //Request headers that will be added to the default set of headers.
 
-	REQ_Status      status;
-	int             http_status_code;
-	FAIL_REASON failReason;
+		REQ_Status      status;
+		int http_status_code;
+		FAIL_REASON failReason;
 }
 
 

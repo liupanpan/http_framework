@@ -14,6 +14,35 @@ static CURLM multiInstance = 0;
 
 static std::list<HttpRequest *> g_ongoingRequests;
 
+static REQ_Status CurlConnectionErrorToRequest ( int err )
+{
+   switch ( err )
+   {
+   	case CURLE_COULDNT_RESOLVE_PROXY:   
+   		return REQ_LE_NO_HOST;
+   	case CURLE_COULDNT_RESOLVE_HOST:    
+		return REQ_LE_NO_HOST;
+   	case CURLE_COULDNT_CONNECT:         
+		return REQ_LE_REJECTED;
+   	case CURLE_SSL_CERTPROBLEM:         
+		return REQ_LE_OLS_CERT_ERR;
+   	case CURLE_SSL_CACERT:              /** fall through */
+   	case CURLE_SSL_CACERT_BADFILE:      
+		return REQ_LE_BACKEND_CERT_ERR;
+   	case CURLE_SSL_CIPHER:              /** fall through */
+   	case CURLE_SSL_CONNECT_ERROR:      
+		return REQ_LE_SSL_CONNECTION;
+   	case CURLE_OPERATION_TIMEDOUT:      
+		return REQ_LE_TIMEOUT;
+   	case CURLE_WRITE_ERROR:             
+		return REQ_LE_WRITE_ERROR;
+   	default:                          
+      		printf("Unknown CURL error code: %d", err);
+			
+      	return REQ_LE_UNKNOWN;
+   }
+}
+
 static unsigned int onReceiveHeader(void *pData, unsigned int size, unsigned int nmemb, HttpRequest *req)
 {
    return req->onReceiveHeader(pData, size, nmemb);
@@ -67,24 +96,34 @@ static void processCurlError(CURLMsg* msg, HttpRequest* req, bool &requestResche
 	switch(msg->data.result)
 	{
 		case CURLE_COULDNT_RESOLVE_HOST:
-      	case CURLE_SSL_CONNECT_ERROR:
-      	case CURLE_SSL_CIPHER:
-      	case CURLE_SSL_CERTPROBLEM:
-      	case CURLE_SSL_CACERT:
-      	case CURLE_SSL_CACERT_BADFILE:
-      	case CURLE_SSL_SHUTDOWN_FAILED:
-      	case CURLE_SSL_CRL_BADFILE:
-      	case CURLE_SSL_ISSUER_ERROR:
+      		case CURLE_SSL_CONNECT_ERROR:
+	      	case CURLE_SSL_CIPHER:
+	      	case CURLE_SSL_CERTPROBLEM:
+	      	case CURLE_SSL_CACERT:
+	      	case CURLE_SSL_CACERT_BADFILE:
+	      	case CURLE_SSL_SHUTDOWN_FAILED:
+	      	case CURLE_SSL_CRL_BADFILE:
+	      	case CURLE_SSL_ISSUER_ERROR:
 
 		default:
-         /* Do nothing */
-      	break;
+         	/* Do nothing */
+      		break;
 	}
+
+	req->setLinkError ( CurlConnectionErrorToRequest ( msg->data.result ) );
 }
 
 static void processCurlOk(CURLMsg* msg, HttpRequest* req, const long http_code, bool &requestRescheduled)
 {
+	if(http_code != HTTP_STATUS_OK)
+	{
+		req->setHttpError(http_code);
+		
+		if (http_code >= HTTP_STATUS_BAD_REQUEST)
+		{
 
+		}
+	}
 }
 	
 static void processCurl (void* dummy)
@@ -114,6 +153,9 @@ static void processCurl (void* dummy)
    			bool requestRescheduled = false;
 
 			curl_easy_getinfo(msg->easy_handle, CURLINFO_PRIVATE, &req);
+
+			// This request is finished w/ REQHND, so remove it from the 'ongoing' list.
+         		g_ongoingRequests.remove(req);
 			
 			if (msg->data.result != CURLE_OK)
 			{
@@ -122,13 +164,21 @@ static void processCurl (void* dummy)
 			else
 			{
 				long http_code;
-            	curl_easy_getinfo(msg->easy_handle, CURLINFO_RESPONSE_CODE, &http_code);
+            			curl_easy_getinfo(msg->easy_handle, CURLINFO_RESPONSE_CODE, &http_code);
 				//printf("HTTP resp code: %li\n", http_code);
 				processCurlOk(msg, req, http_code);
 			}
 
 			req->onRequestDone();
    		}
+   	}
+	/**
+    	* check if there is more work
+    	* update running state if needed
+    	*/
+   	if (still_running)
+   	{
+      		online::core::Timer t(100, online::core::TimerCbData(processCurl));
    	}
 }
 
@@ -140,10 +190,15 @@ void REQHND_Init ()
       	curl_multi_cleanup(multiInstance);
       	multiInstance = NULL;
    	}
+
+	// It is ok to call this func multiple times...
+   	curl_global_init ( CURL_GLOBAL_DEFAULT );
 	
 	// multi instance used for pumping requests
 	multiInstance = curl_multi_init();
 
+	curl_multi_setopt(multiInstance, CURLMOPT_PIPELINING, 1); //Pipelining
+	
 	state = REQHND_IDLE;
 }
 
@@ -164,6 +219,7 @@ bool REQHND_Send (HttpRequest* pRequest)
 			if(!configureSession (h, pRequest))
 			{	
 				printf("Failed to configure request session: '%s'", pRequest->urlStr.c_str());
+				curl_easy_cleanup(h);
 				return false;
 			}
 			else
@@ -180,6 +236,7 @@ bool REQHND_Send (HttpRequest* pRequest)
             				Timer t(0, online::core::TimerCbData(processCurl));
             				state = REQHND_WORKING;
             			}
+				
 				return true;	
 			}
 		}
@@ -200,16 +257,11 @@ void REQHND_TerminateRequests(void)
 {
    // If we add a new request in an OnRequestDone call we will end up
    // in an endless loop if we don't copy the list first.
-
-   std::list<HttpRequest *> ongoingRequests( g_ongoingRequests );
+   std::list<HttpRequest *> ongoingRequests(g_ongoingRequests);
    g_ongoingRequests.clear();
 
    printf("Terminate all ongoing requests: %d\n", ongoingRequests.size());
    std::for_each(ongoingRequests.begin(), ongoingRequests.end(), terminateRequest);
 }
-
-
-
-
 
 

@@ -11,6 +11,7 @@ struct AppRequest:public Req, public Rsp, public HttpRequest
 
 	AppRequest(const std::string& url) 
     {
+    	setRequestInfo(*this);//set up the http header
         urlStr = url;
 	}
 
