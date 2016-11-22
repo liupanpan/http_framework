@@ -1,3 +1,6 @@
+#ifndef _CS_REQHND_H_
+#define _CS_REQHND_H_
+
 #include "HttpRequest.h"
 
 /**
@@ -23,3 +26,4 @@ void REQHND_Init ();
  */
 bool REQHND_Send (HttpRequest* pRequest );
 
+#endif

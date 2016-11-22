@@ -1,3 +1,6 @@
+#ifndef _SynchronousRequest_H__
+#define _SynchronousRequest_H__
+
 #include <list>
 #include <string>
 using namespace std;
@@ -23,4 +26,4 @@ public:
 
 };
 
-
+#endif

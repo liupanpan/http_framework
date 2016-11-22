@@ -1,9 +1,10 @@
 #include <stdio.h>
 #include <string.h>
 #include "HttpRequest.h"
+#include "Http_status_codes.h"
+#include "SynchronousRequest.h"
 
 HttpRequest::HttpRequest():
-	method(INVALID),
 	status(REQ_OK),
 	http_status_code(HTTP_STATUS_OK),
 	failReason(NONE)

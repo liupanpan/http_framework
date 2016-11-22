@@ -1,3 +1,6 @@
+#ifndef _HTTP_STATUS_CODES_H_
+#define _HTTP_STATUS_CODES_H_
+
 /*********************************************************************/
 /*                           USER DEFINES                            */
 /*********************************************************************/
@@ -126,3 +129,4 @@
 /* HTTP Version not supported */
 #define HTTP_STATUS_HTTP_VERSION_NOT_SUPPORTED 505
 
+#endif

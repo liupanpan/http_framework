@@ -1,3 +1,6 @@
+#ifndef _APPREQUEST_H_
+#define _APPREQUEST_H_
+
 #include <sstream>
 #include "HttpRequest.h"
 
@@ -49,3 +52,5 @@ struct AppRequest:public Req, public Rsp, public HttpRequest
     }
         
 };
+
+#endif

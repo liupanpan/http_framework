@@ -1,8 +1,12 @@
+#ifndef _HTTPREQUEST_H_
+#define _HTTPREQUEST_H_
+
 #include <stddef.h>
 #include <vector>
 #include <string>
-#include <reuse.h>
 #include <map>
+
+#include "SynchronousRequest.h"
 
 enum REQ_Status
 {
@@ -80,14 +84,18 @@ class HttpRequest
 		HttpRequest();
 		virtual ~HttpRequest();
 		
-        virtual void onRequestDone() = 0;
+	        virtual void onRequestDone() = 0;
 
-        virtual unsigned int onReceiveHeader(void *pData, unsigned int size, unsigned int nmemb);
+	        virtual unsigned int onReceiveHeader(void *pData, unsigned int size, unsigned int nmemb);
 
-        virtual unsigned int onReceiveData(void *pData, unsigned int size, unsigned int nmemb);
+	        virtual unsigned int onReceiveData(void *pData, unsigned int size, unsigned int nmemb);
 
-        virtual unsigned int onTransmitData(void *pData, unsigned int size, unsigned int nmemb);
-        
+	        virtual unsigned int onTransmitData(void *pData, unsigned int size, unsigned int nmemb);
+
+		virtual void setLinkError ( const REQ_Status req_status );
+
+		virtual void setHttpError ( int http_error );
+		
 		//Buffers
 		unsigned int txDataTransmitted;//How many bytes has currently been sent.
 		std::vector<unsigned char> txBuffer; //Buffer containing send data. Typically xml data serialized from internal structures.
@@ -96,28 +104,24 @@ class HttpRequest
 		// Connection config
 		std::string urlStr;
 
+		Method method;
+		
 		typedef std::map<HeaderType, std::string> HeaderMap;
 		HeaderMap headers;            //Request headers that will be added to the default set of headers.
 
 		REQ_Status      status;
 		int http_status_code;
 		FAIL_REASON failReason;
-}
 
+		/**
+       	  * @param[in] synchronousRequest                            The request info to use.
+            * @return                                                  True if all went well.
+            *                                                          False if an error occurred.
+            */
+		void setRequestInfo(const SynchronousRequest &synchronousRequest);
+};
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+#endif
 
 
 

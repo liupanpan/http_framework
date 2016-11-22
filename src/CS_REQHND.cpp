@@ -2,15 +2,19 @@
 #include <curl/easy.h>
 #include <openssl/ssl.h>
 #include <string>
+#include <list>
 #include <vector>
 #include <algorithm>
 #include <sstream>
+#include <stdlib.h> 
+#include <signal.h> 
 
 #include "CS_REQHND.h"
 #include "HttpRequest.h"
+#include "Http_status_codes.h"
 
 static REQHND_State state = { REQHND_INIT };
-static CURLM multiInstance = 0;
+static void* multiInstance = 0;
 
 static std::list<HttpRequest *> g_ongoingRequests;
 
@@ -91,7 +95,7 @@ static bool configureSession ( void* handle, HttpRequest* req )
 	return true;
 }
 
-static void processCurlError(CURLMsg* msg, HttpRequest* req, bool &requestRescheduled)
+static void processCurlError(CURLMsg* msg, HttpRequest* req)
 {
 	switch(msg->data.result)
 	{
@@ -113,7 +117,7 @@ static void processCurlError(CURLMsg* msg, HttpRequest* req, bool &requestResche
 	req->setLinkError ( CurlConnectionErrorToRequest ( msg->data.result ) );
 }
 
-static void processCurlOk(CURLMsg* msg, HttpRequest* req, const long http_code, bool &requestRescheduled)
+static void processCurlOk(CURLMsg* msg, HttpRequest* req, const long http_code)
 {
 	if(http_code != HTTP_STATUS_OK)
 	{
@@ -150,7 +154,6 @@ static void processCurl (void* dummy)
    		if (msg->msg == CURLMSG_DONE) 
    		{
    			HttpRequest* req;
-   			bool requestRescheduled = false;
 
 			curl_easy_getinfo(msg->easy_handle, CURLINFO_PRIVATE, &req);
 
@@ -178,15 +181,31 @@ static void processCurl (void* dummy)
     	*/
    	if (still_running)
    	{
-      		online::core::Timer t(100, online::core::TimerCbData(processCurl));
+      		//online::core::Timer t(100, online::core::TimerCbData(processCurl));
    	}
+}
+
+static void terminateRequest(HttpRequest *pRequest)
+{
+   // Finalize and delete request object
+   pRequest->status = REQ_CONTROLLED_DISABLE;
+   pRequest->onRequestDone();
+   delete pRequest;
+}
+
+void reqhnd_TerminateRequests(void)
+{
+   std::list<HttpRequest *> ongoingRequests( g_ongoingRequests );
+   g_ongoingRequests.clear();
+
+   std::for_each( ongoingRequests.begin(), ongoingRequests.end(), terminateRequest);
 }
 
 void REQHND_Init ()
 {
 	if (NULL != multiInstance)
 	{
-    	REQHND_TerminateRequests();
+    	reqhnd_TerminateRequests();
       	curl_multi_cleanup(multiInstance);
       	multiInstance = NULL;
    	}
@@ -224,7 +243,7 @@ bool REQHND_Send (HttpRequest* pRequest)
 			}
 			else
 			{
-				printf("Send HTTP Request[Addr: 0x%p]: (%s) '%s\n", pRequest, pRequest->urlStr.c_str());
+				printf("Send HTTP Request[Addr: 0x%p]: %s\n", pRequest, pRequest->urlStr.c_str());
 				g_ongoingRequests.push_back(pRequest);
 				
 				printf("Adding handle (%p) to multihandle container.", h);
@@ -233,7 +252,7 @@ bool REQHND_Send (HttpRequest* pRequest)
 				if(state == REQHND_IDLE)
             			{
                 			//Start request scheduling
-            				Timer t(0, online::core::TimerCbData(processCurl));
+            				//Timer t(0, online::core::TimerCbData(processCurl));
             				state = REQHND_WORKING;
             			}
 				
@@ -243,25 +262,5 @@ bool REQHND_Send (HttpRequest* pRequest)
 	}
 }
 
-static void terminateRequest(HttpRequest *pRequest)
-{
-   printf("Terminating request %p\n", pRequest);
-   
-   // Finalize and delete request object
-   pRequest->status = REQ_CONTROLLED_DISABLE;
-   pRequest->onRequestDone();
-   delete pRequest;
-}
-
-void REQHND_TerminateRequests(void)
-{
-   // If we add a new request in an OnRequestDone call we will end up
-   // in an endless loop if we don't copy the list first.
-   std::list<HttpRequest *> ongoingRequests(g_ongoingRequests);
-   g_ongoingRequests.clear();
-
-   printf("Terminate all ongoing requests: %d\n", ongoingRequests.size());
-   std::for_each(ongoingRequests.begin(), ongoingRequests.end(), terminateRequest);
-}
 
 
