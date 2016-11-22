@@ -6,11 +6,10 @@
 
 // Base class for Application requests
 // provides standardized handling for sending/receiving requests
-template <typename Req, typename Rsp>
-struct AppRequest:public Req, public Rsp, public HttpRequest
+template <typename Req>
+struct AppRequest:public Req, public HttpRequest
 {
-	typedef AppRequest <Req, Rsp> base;
-	typedef Rsp R;
+	typedef AppRequest <Req> base;
 
 	AppRequest(const std::string& url) 
     {
@@ -18,8 +17,11 @@ struct AppRequest:public Req, public Rsp, public HttpRequest
         urlStr = url;
 	}
 
-    virtual void OnRequestResult ( const Rsp& rsp ) = 0;
-    virtual void OnRequestFailed ( FAIL_REASON reason ) = 0;
+    virtual bool OnRequestResult(){
+		return false;
+	};
+
+    virtual void OnRequestFailed(FAIL_REASON reason) = 0;
 
     //Called when the search request is done. Successful or not.
     void onRequestDone()
@@ -27,11 +29,10 @@ struct AppRequest:public Req, public Rsp, public HttpRequest
         FAIL_REASON reason = NONE;
         if(status == REQ_OK) 
         {
-            Rsp rsp; Rsp* prsp = &rsp;
             printf(">>>>>>>%s>>>>>>\n", reinterpret_cast<char*>(&(rxBuffer[0])));
             //if(xml/json decode succfully)
             //{
-            //    OnRequestResult(rsp);
+            //    OnRequestResult();
             //}
         }
         else if(status == REQ_HTTP_ERR)

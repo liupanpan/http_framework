@@ -84,13 +84,13 @@ class HttpRequest
 		HttpRequest();
 		virtual ~HttpRequest();
 		
-	        virtual void onRequestDone() = 0;
+	    virtual void onRequestDone() = 0;
 
-	        virtual unsigned int onReceiveHeader(void *pData, unsigned int size, unsigned int nmemb);
+	    virtual unsigned int onReceiveHeader(void *pData, unsigned int size, unsigned int nmemb);
 
-	        virtual unsigned int onReceiveData(void *pData, unsigned int size, unsigned int nmemb);
+		virtual unsigned int onReceiveData(void *pData, unsigned int size, unsigned int nmemb);
 
-	        virtual unsigned int onTransmitData(void *pData, unsigned int size, unsigned int nmemb);
+	    virtual unsigned int onTransmitData(void *pData, unsigned int size, unsigned int nmemb);
 
 		virtual void setLinkError ( const REQ_Status req_status );
 
@@ -115,9 +115,9 @@ class HttpRequest
 
 		/**
        	  * @param[in] synchronousRequest                            The request info to use.
-            * @return                                                  True if all went well.
-            *                                                          False if an error occurred.
-            */
+          * @return                                                  True if all went well.
+          *                                                          False if an error occurred.
+          */
 		void setRequestInfo(const SynchronousRequest &synchronousRequest);
 };
 
