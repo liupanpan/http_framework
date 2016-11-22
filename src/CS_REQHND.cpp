@@ -28,7 +28,7 @@ static REQ_Status CurlConnectionErrorToRequest ( int err )
 		return REQ_LE_NO_HOST;
    	case CURLE_COULDNT_CONNECT:         
 		return REQ_LE_REJECTED;
-   	case CURLE_SSL_CERTPROBLEM:         
+    case CURLE_SSL_CERTPROBLEM:         
 		return REQ_LE_OLS_CERT_ERR;
    	case CURLE_SSL_CACERT:              /** fall through */
    	case CURLE_SSL_CACERT_BADFILE:      
@@ -41,7 +41,7 @@ static REQ_Status CurlConnectionErrorToRequest ( int err )
    	case CURLE_WRITE_ERROR:             
 		return REQ_LE_WRITE_ERROR;
    	default:                          
-      		printf("Unknown CURL error code: %d", err);
+      	printf("Unknown CURL error code: %d", err);
 			
       	return REQ_LE_UNKNOWN;
    }
@@ -130,11 +130,12 @@ static void processCurlOk(CURLMsg* msg, HttpRequest* req, const long http_code)
 	}
 }
 	
-static void processCurl (void* dummy)
+static void processCurl()
 {
 	int curlMultiPerform = CURLM_CALL_MULTI_PERFORM;
 	int still_running = 0;
 
+	printf("enter the processCurl\n");
 	// read/write for all easy handles 
    	while (curlMultiPerform == CURLM_CALL_MULTI_PERFORM) 
    	{
@@ -158,8 +159,10 @@ static void processCurl (void* dummy)
 			curl_easy_getinfo(msg->easy_handle, CURLINFO_PRIVATE, &req);
 
 			// This request is finished w/ REQHND, so remove it from the 'ongoing' list.
-         		g_ongoingRequests.remove(req);
+         	g_ongoingRequests.remove(req);
 			
+			printf("### HTTP Request response [Addr: 0x%p] '%s'\n",req, req->urlStr.c_str());
+
 			if (msg->data.result != CURLE_OK)
 			{
 				processCurlError(msg, req);
@@ -176,13 +179,13 @@ static void processCurl (void* dummy)
    		}
    	}
 	/**
-    	* check if there is more work
-    	* update running state if needed
-    	*/
+      * check if there is more work
+      * update running state if needed
+      */
    	if (still_running)
    	{
-      		//online::core::Timer t(100, online::core::TimerCbData(processCurl));
-   	}
+		//Timer t(100, TimerCbData(processCurl));
+	}
 }
 
 static void terminateRequest(HttpRequest *pRequest)
@@ -203,6 +206,7 @@ void reqhnd_TerminateRequests(void)
 
 void REQHND_Init ()
 {
+	printf("enter the reqhand_int\n");
 	if (NULL != multiInstance)
 	{
     	reqhnd_TerminateRequests();
@@ -223,6 +227,7 @@ void REQHND_Init ()
 
 bool REQHND_Send (HttpRequest* pRequest)
 {
+	printf("enter the reqhand_send\n");
 	if(NULL == pRequest)
 	{
 		printf("Try to send NULL request...\n");
@@ -246,20 +251,22 @@ bool REQHND_Send (HttpRequest* pRequest)
 				printf("Send HTTP Request[Addr: 0x%p]: %s\n", pRequest, pRequest->urlStr.c_str());
 				g_ongoingRequests.push_back(pRequest);
 				
-				printf("Adding handle (%p) to multihandle container.", h);
-            			curl_multi_add_handle(multiInstance, h);
+				printf("Adding handle (%p) to multihandle container.\n", h);
+            	curl_multi_add_handle(multiInstance, h);
 
 				if(state == REQHND_IDLE)
-            			{
-                			//Start request scheduling
-            				//Timer t(0, online::core::TimerCbData(processCurl));
-            				state = REQHND_WORKING;
-            			}
+            	{
+					//Start request scheduling
+            		//Timer t(0, TimerCbData(processCurl));
+					state = REQHND_WORKING;
+            	}
 				
 				return true;	
 			}
 		}
 	}
+
+	return false;
 }
 
 
