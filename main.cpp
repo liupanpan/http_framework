@@ -67,11 +67,7 @@ int main()
 	{
 		/*向主进程发送信号，实际上是自己给自己发信号*/
 		sigqueue(getpid(), 50, tsval);
-<<<<<<< HEAD
-		sleep(5); /*睡眠2秒*/
-=======
-		sleep(15); /*睡眠2秒*/
->>>>>>> b8f0777f1c8fdba340a42986ebb48a8a323feb7e
+		sleep(5); /*睡眠5秒*/
 	}
 	return 0;
 }

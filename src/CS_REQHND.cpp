@@ -84,10 +84,10 @@ static bool configureSession ( void* handle, HttpRequest* req )
 
 	// Setup redirection and its limit...
 	curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, 1);
-    curl_easy_setopt(handle, CURLOPT_MAXREDIRS, 2);
+    	curl_easy_setopt(handle, CURLOPT_MAXREDIRS, 2);
 
 	curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, true);
-    curl_easy_setopt(handle, CURLOPT_SSL_SESSIONID_CACHE, true);
+    	curl_easy_setopt(handle, CURLOPT_SSL_SESSIONID_CACHE, true);
 
 	// Set timeouts
    	curl_easy_setopt(handle, CURLOPT_CONNECTTIMEOUT, 20);
@@ -130,7 +130,6 @@ static void processCurlOk(CURLMsg* msg, HttpRequest* req, const long http_code)
 		}
 	}
 }
-<<<<<<< HEAD
 
 static void cleanupRequestWithCurl(HttpRequest* pRequest)
 {
@@ -141,23 +140,16 @@ static void cleanupRequestWithCurl(HttpRequest* pRequest)
 	}
 
 		     
-    pRequest->pSessionHandle = NULL;
+    	pRequest->pSessionHandle = NULL;
 }
 
-=======
 	
->>>>>>> b8f0777f1c8fdba340a42986ebb48a8a323feb7e
 static void processCurl()
 {
 	int curlMultiPerform = CURLM_CALL_MULTI_PERFORM;
 	int still_running = 0;
 
-<<<<<<< HEAD
 	//调用curl_multi_perform函数执行curl请求 
-=======
-	printf("enter the processCurl\n");
-	// read/write for all easy handles 
->>>>>>> b8f0777f1c8fdba340a42986ebb48a8a323feb7e
    	while (curlMultiPerform == CURLM_CALL_MULTI_PERFORM) 
    	{
     	curlMultiPerform = curl_multi_perform(multiInstance, &still_running);
@@ -180,24 +172,17 @@ static void processCurl()
 			curl_easy_getinfo(msg->easy_handle, CURLINFO_PRIVATE, &req);
 
 			// This request is finished w/ REQHND, so remove it from the 'ongoing' list.
-         	g_ongoingRequests.remove(req);
-<<<<<<< HEAD
+         		g_ongoingRequests.remove(req);
 			//printf("### HTTP Request response [Addr: 0x%p] '%s'\n",req, req->urlStr.c_str());
-
-			if(msg->data.result != CURLE_OK)
-=======
 			
-			printf("### HTTP Request response [Addr: 0x%p] '%s'\n",req, req->urlStr.c_str());
-
 			if (msg->data.result != CURLE_OK)
->>>>>>> b8f0777f1c8fdba340a42986ebb48a8a323feb7e
 			{
 				processCurlError(msg, req);
 			}
 			else
 			{
 				long http_code;
-            	curl_easy_getinfo(msg->easy_handle, CURLINFO_RESPONSE_CODE, &http_code);
+            			curl_easy_getinfo(msg->easy_handle, CURLINFO_RESPONSE_CODE, &http_code);
 				//printf("HTTP resp code: %li\n", http_code);
 				processCurlOk(msg, req, http_code);
 			}
@@ -209,19 +194,13 @@ static void processCurl()
    		}
    	}
 	/**
-      * check if there is more work
-      * update running state if needed
-      */
-<<<<<<< HEAD
+      	* check if there is more work
+      	* update running state if needed
+      	*/
    	if(still_running)
    	{
 		//Timer t(100, TimerCbData(processCurl));
 		processCurl();
-=======
-   	if (still_running)
-   	{
-		//Timer t(100, TimerCbData(processCurl));
->>>>>>> b8f0777f1c8fdba340a42986ebb48a8a323feb7e
 	}
 }
 
@@ -291,25 +270,17 @@ bool REQHND_Send (HttpRequest* pRequest)
 				curl_easy_setopt(h, CURLOPT_PRIVATE, pRequest);
 				pRequest->pSessionHandle = h;
 				
-<<<<<<< HEAD
 				printf("Send HTTP Request[Addr: 0x%p]: %s\n", pRequest, pRequest->urlStr.c_str());
 				printf("Adding handle (%p) to multihandle container.\n", h);
-            	curl_multi_add_handle(multiInstance, h);
-=======
-				printf("Adding handle (%p) to multihandle container.\n", h);
-            	curl_multi_add_handle(multiInstance, h);
+            			curl_multi_add_handle(multiInstance, h);
 
->>>>>>> b8f0777f1c8fdba340a42986ebb48a8a323feb7e
 				if(state == REQHND_IDLE)
-            	{
+            			{
 					//Start request scheduling
-            		//Timer t(0, TimerCbData(processCurl));
+            				//Timer t(0, TimerCbData(processCurl));
 					state = REQHND_WORKING;
-<<<<<<< HEAD
 					processCurl();
-=======
->>>>>>> b8f0777f1c8fdba340a42986ebb48a8a323feb7e
-            	}
+            			}
 				
 				return true;	
 			}
