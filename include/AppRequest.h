@@ -29,7 +29,7 @@ struct AppRequest:public Req, public HttpRequest
         FAIL_REASON reason = NONE;
         if(status == REQ_OK) 
         {
-            printf(">>>>>>>%s>>>>>>\n", reinterpret_cast<char*>(&(rxBuffer[0])));
+            printf("%s\n", reinterpret_cast<char*>(&(rxBuffer[0])));
             //if(xml/json decode succfully)
             //{
             //    OnRequestResult();

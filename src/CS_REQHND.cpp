@@ -8,6 +8,7 @@
 #include <sstream>
 #include <stdlib.h> 
 #include <signal.h> 
+#include <unistd.h>
 
 #include "CS_REQHND.h"
 #include "HttpRequest.h"
@@ -28,7 +29,7 @@ static REQ_Status CurlConnectionErrorToRequest ( int err )
 		return REQ_LE_NO_HOST;
    	case CURLE_COULDNT_CONNECT:         
 		return REQ_LE_REJECTED;
-   	case CURLE_SSL_CERTPROBLEM:         
+    case CURLE_SSL_CERTPROBLEM:         
 		return REQ_LE_OLS_CERT_ERR;
    	case CURLE_SSL_CACERT:              /** fall through */
    	case CURLE_SSL_CACERT_BADFILE:      
@@ -41,7 +42,7 @@ static REQ_Status CurlConnectionErrorToRequest ( int err )
    	case CURLE_WRITE_ERROR:             
 		return REQ_LE_WRITE_ERROR;
    	default:                          
-      		printf("Unknown CURL error code: %d", err);
+      	printf("Unknown CURL error code: %d", err);
 			
       	return REQ_LE_UNKNOWN;
    }
@@ -129,13 +130,25 @@ static void processCurlOk(CURLMsg* msg, HttpRequest* req, const long http_code)
 		}
 	}
 }
-	
-static void processCurl (void* dummy)
+
+static void cleanupRequestWithCurl(HttpRequest* pRequest)
+{
+	if (NULL != pRequest->pSessionHandle)
+	{
+		curl_multi_remove_handle(multiInstance, pRequest->pSessionHandle);
+		curl_easy_cleanup(pRequest->pSessionHandle);
+	}
+
+		     
+    pRequest->pSessionHandle = NULL;
+}
+
+static void processCurl()
 {
 	int curlMultiPerform = CURLM_CALL_MULTI_PERFORM;
 	int still_running = 0;
 
-	// read/write for all easy handles 
+	//调用curl_multi_perform函数执行curl请求 
    	while (curlMultiPerform == CURLM_CALL_MULTI_PERFORM) 
    	{
     	curlMultiPerform = curl_multi_perform(multiInstance, &still_running);
@@ -146,10 +159,10 @@ static void processCurl (void* dummy)
       	state = REQHND_IDLE;
    	}
 
-	// read any messages
+	//输出执行结果
    	CURLMsg* msg;
    	int msgs_left;
-   	while ((msg = curl_multi_info_read (multiInstance, &msgs_left))) 
+   	while ((msg = curl_multi_info_read(multiInstance, &msgs_left))) 
    	{
    		if (msg->msg == CURLMSG_DONE) 
    		{
@@ -158,39 +171,46 @@ static void processCurl (void* dummy)
 			curl_easy_getinfo(msg->easy_handle, CURLINFO_PRIVATE, &req);
 
 			// This request is finished w/ REQHND, so remove it from the 'ongoing' list.
-         		g_ongoingRequests.remove(req);
-			
-			if (msg->data.result != CURLE_OK)
+         	g_ongoingRequests.remove(req);
+			//printf("### HTTP Request response [Addr: 0x%p] '%s'\n",req, req->urlStr.c_str());
+
+			if(msg->data.result != CURLE_OK)
 			{
 				processCurlError(msg, req);
 			}
 			else
 			{
 				long http_code;
-            			curl_easy_getinfo(msg->easy_handle, CURLINFO_RESPONSE_CODE, &http_code);
+            	curl_easy_getinfo(msg->easy_handle, CURLINFO_RESPONSE_CODE, &http_code);
 				//printf("HTTP resp code: %li\n", http_code);
 				processCurlOk(msg, req, http_code);
 			}
-
+			// Cleanup curl session
+			cleanupRequestWithCurl(req);
 			req->onRequestDone();
+
+			delete req;
    		}
    	}
 	/**
-    	* check if there is more work
-    	* update running state if needed
-    	*/
-   	if (still_running)
+      * check if there is more work
+      * update running state if needed
+      */
+   	if(still_running)
    	{
-      		//online::core::Timer t(100, online::core::TimerCbData(processCurl));
-   	}
+		//Timer t(100, TimerCbData(processCurl));
+		processCurl();
+	}
 }
 
 static void terminateRequest(HttpRequest *pRequest)
 {
-   // Finalize and delete request object
-   pRequest->status = REQ_CONTROLLED_DISABLE;
-   pRequest->onRequestDone();
-   delete pRequest;
+	// Cleanup curl session
+	cleanupRequestWithCurl(pRequest);
+	// Finalize and delete request object
+	pRequest->status = REQ_CONTROLLED_DISABLE;
+	pRequest->onRequestDone();
+	delete pRequest;
 }
 
 void reqhnd_TerminateRequests(void)
@@ -243,23 +263,27 @@ bool REQHND_Send (HttpRequest* pRequest)
 			}
 			else
 			{
-				printf("Send HTTP Request[Addr: 0x%p]: %s\n", pRequest, pRequest->urlStr.c_str());
 				g_ongoingRequests.push_back(pRequest);
+				curl_easy_setopt(h, CURLOPT_PRIVATE, pRequest);
+				pRequest->pSessionHandle = h;
 				
-				printf("Adding handle (%p) to multihandle container.", h);
-            			curl_multi_add_handle(multiInstance, h);
-
+				printf("Send HTTP Request[Addr: 0x%p]: %s\n", pRequest, pRequest->urlStr.c_str());
+				printf("Adding handle (%p) to multihandle container.\n", h);
+            	curl_multi_add_handle(multiInstance, h);
 				if(state == REQHND_IDLE)
-            			{
-                			//Start request scheduling
-            				//Timer t(0, online::core::TimerCbData(processCurl));
-            				state = REQHND_WORKING;
-            			}
+            	{
+					//Start request scheduling
+            		//Timer t(0, TimerCbData(processCurl));
+					state = REQHND_WORKING;
+					processCurl();
+            	}
 				
 				return true;	
 			}
 		}
 	}
+
+	return false;
 }
 
 

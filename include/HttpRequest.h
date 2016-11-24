@@ -109,6 +109,8 @@ class HttpRequest
 		typedef std::map<HeaderType, std::string> HeaderMap;
 		HeaderMap headers;            //Request headers that will be added to the default set of headers.
 
+		void *pSessionHandle;	//the easy curl handle
+
 		REQ_Status      status;
 		int http_status_code;
 		FAIL_REASON failReason;

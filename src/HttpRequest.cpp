@@ -54,7 +54,7 @@ unsigned int HttpRequest::onReceiveData(void *pData, unsigned int size, unsigned
 {
    printf("HttpRequest (%p) received %d bytes...\n", this, size*nmemb);
 
-   // Append data to rx buffer
+   //Append data to rx buffer
    rxBuffer.insert(rxBuffer.end(), (unsigned char*)(pData), (unsigned char*)(pData) + size*nmemb);
 
    return size*nmemb;
