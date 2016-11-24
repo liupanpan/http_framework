@@ -130,6 +130,7 @@ static void processCurlOk(CURLMsg* msg, HttpRequest* req, const long http_code)
 		}
 	}
 }
+<<<<<<< HEAD
 
 static void cleanupRequestWithCurl(HttpRequest* pRequest)
 {
@@ -143,12 +144,20 @@ static void cleanupRequestWithCurl(HttpRequest* pRequest)
     pRequest->pSessionHandle = NULL;
 }
 
+=======
+	
+>>>>>>> b8f0777f1c8fdba340a42986ebb48a8a323feb7e
 static void processCurl()
 {
 	int curlMultiPerform = CURLM_CALL_MULTI_PERFORM;
 	int still_running = 0;
 
+<<<<<<< HEAD
 	//调用curl_multi_perform函数执行curl请求 
+=======
+	printf("enter the processCurl\n");
+	// read/write for all easy handles 
+>>>>>>> b8f0777f1c8fdba340a42986ebb48a8a323feb7e
    	while (curlMultiPerform == CURLM_CALL_MULTI_PERFORM) 
    	{
     	curlMultiPerform = curl_multi_perform(multiInstance, &still_running);
@@ -172,9 +181,16 @@ static void processCurl()
 
 			// This request is finished w/ REQHND, so remove it from the 'ongoing' list.
          	g_ongoingRequests.remove(req);
+<<<<<<< HEAD
 			//printf("### HTTP Request response [Addr: 0x%p] '%s'\n",req, req->urlStr.c_str());
 
 			if(msg->data.result != CURLE_OK)
+=======
+			
+			printf("### HTTP Request response [Addr: 0x%p] '%s'\n",req, req->urlStr.c_str());
+
+			if (msg->data.result != CURLE_OK)
+>>>>>>> b8f0777f1c8fdba340a42986ebb48a8a323feb7e
 			{
 				processCurlError(msg, req);
 			}
@@ -196,10 +212,16 @@ static void processCurl()
       * check if there is more work
       * update running state if needed
       */
+<<<<<<< HEAD
    	if(still_running)
    	{
 		//Timer t(100, TimerCbData(processCurl));
 		processCurl();
+=======
+   	if (still_running)
+   	{
+		//Timer t(100, TimerCbData(processCurl));
+>>>>>>> b8f0777f1c8fdba340a42986ebb48a8a323feb7e
 	}
 }
 
@@ -223,6 +245,7 @@ void reqhnd_TerminateRequests(void)
 
 void REQHND_Init ()
 {
+	printf("enter the reqhand_int\n");
 	if (NULL != multiInstance)
 	{
     	reqhnd_TerminateRequests();
@@ -243,6 +266,7 @@ void REQHND_Init ()
 
 bool REQHND_Send (HttpRequest* pRequest)
 {
+	printf("enter the reqhand_send\n");
 	if(NULL == pRequest)
 	{
 		printf("Try to send NULL request...\n");
@@ -267,15 +291,24 @@ bool REQHND_Send (HttpRequest* pRequest)
 				curl_easy_setopt(h, CURLOPT_PRIVATE, pRequest);
 				pRequest->pSessionHandle = h;
 				
+<<<<<<< HEAD
 				printf("Send HTTP Request[Addr: 0x%p]: %s\n", pRequest, pRequest->urlStr.c_str());
 				printf("Adding handle (%p) to multihandle container.\n", h);
             	curl_multi_add_handle(multiInstance, h);
+=======
+				printf("Adding handle (%p) to multihandle container.\n", h);
+            	curl_multi_add_handle(multiInstance, h);
+
+>>>>>>> b8f0777f1c8fdba340a42986ebb48a8a323feb7e
 				if(state == REQHND_IDLE)
             	{
 					//Start request scheduling
             		//Timer t(0, TimerCbData(processCurl));
 					state = REQHND_WORKING;
+<<<<<<< HEAD
 					processCurl();
+=======
+>>>>>>> b8f0777f1c8fdba340a42986ebb48a8a323feb7e
             	}
 				
 				return true;	
