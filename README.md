@@ -2,7 +2,7 @@
 This is client framework that can be request to http server and response to get the data. Besides that the data can be decoded to xml or json format.
 
 1. g++ -I./include src/CS_REQHND.cpp src/HttpRequest.cpp -fPIC -shared -o libhttp.so
-   (g++ -I/usr/local/include/ -I./include -L/usr/local/lib/ -lcurl src/CS_REQHND.cpp src/HttpRequest.cpp -fPIC -shared -o libhttp.so)
+   (g++ -I/usr/local/include/ -I./include -L/usr/local/lib/ -lcurl src/CS_REQHND.cpp src/HttpRequest.cpp -fPIC -shared -o libhttp.so) libcurl,libxml2库我安装在了目录/usr/local/lib下
 
 2. g++ main.cpp -L. -lhttp -L/usr/local/lib/ -lcurl -o test
 
