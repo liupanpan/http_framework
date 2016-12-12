@@ -236,29 +236,110 @@ Decode_Error XmlDataDecoder::getNodeValue(const void * node, string &value)
 	return DECODER_OK;
 }
 
+/*
+*discription:get the attribute value of node.
+*@param[in] pnode: the address of node.
+*@param[in] attname: the name of attribute.
+*@param[out] value: the value of attribute.
+*return: true mean success, false mean fail.
+*/
+Decode_Error XmlDataDecoder::getAttrValueByAttrName(const void* node, const string attName,string & value)
+{
+	void * nodePtr = NULL;
+	xmlNodePtr parNode = NULL;
+	
+	if (node == NULL || attName.empty() || !checkNodeValid(node))
+	{
+		return NODE_INVALID;
+	}
+	else
+	{	  
+		nodePtr  = const_cast<void *>(node);
+		parNode = (xmlNodePtr)nodePtr;
+	}
+	//to do check node is valid
+	
+	if (NULL != xmlReader)
+	{
+		xmlAttrPtr attrPtr = parNode->properties;
+		while (attrPtr != NULL)
+		{
+			if (0 == xmlStrcmp(attrPtr->name, BAD_CAST (attName.c_str())))
+			{
+				xmlChar* szAttr = xmlGetProp(parNode,BAD_CAST(attName.c_str()));
+				value = (char *)szAttr;
+				xmlFree(szAttr);
+				break;
+			}
+			attrPtr = attrPtr->next;
+		}
+#if 0
+		if (NULL == attrPtr)
+		{
+			//to do print have no attr name is attName
+			return false;
+		}
+		else
+		{
+			//to do print success.
+		}
+#endif
+	}
+	else
+	{
+		//to do print not parse file.
+		return DATA_ERROR;
+	}
+	
+	return DECODER_OK;
+}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+/*
+*discription:get the value of node set
+*@param[in] pnode: the address of parent node.
+*@param[in] nodename: the set of node name.
+*@param[out] values: the value of nodes.
+*return: true mean success, false mean fail.
+*/
+Decode_Error XmlDataDecoder::getNodeValuesByNodeNames(const void *node, VECTORSTRING nodeNames, VECTORSTRING & values)
+{
+	VECTORSTRING::iterator it;
+	VECTORSTRING nodeValues;
+	VECTORVOIDPTR nodes;
+	string str = "";
+	
+	if (NULL == node || !checkNodeValid(node))
+	{
+		return NODE_INVALID;
+	}
+	
+	if (NULL != xmlReader)
+	{
+		for (it = nodeNames.begin(); it != nodeNames.end(); ++ it)
+		{
+			nodes.clear();
+			str = "";
+			
+			if (DECODER_OK == getNodeByNodeName(node,*it,nodes))
+			{
+				if (!nodes.empty())
+				{
+					getNodeValue((*nodes.begin()),str);
+				}
+				
+				values.push_back(str);
+			}
+			else
+			{
+				return PARSE_ERROR;
+			}
+		}
+		
+	}
+	else
+	{
+		return DATA_ERROR;
+		//to do warning , not parse the file.
+	}
+	return DECODER_OK;
+}
